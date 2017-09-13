@@ -136,7 +136,16 @@ func (ks *mockKeySpace) NewTable(name string, entity interface{}, fields map[str
 func NewMockKeySpace() KeySpace {
 	ks := &mockKeySpace{}
 	ks.tableFactory = ks
+
+	noopFactory = mockNoopFactory{}
+
 	return ks
+}
+
+type mockNoopFactory struct{}
+
+func (mnf mockNoopFactory) NewNoop() Op {
+	return mockMultiOp(nil)
 }
 
 // MockTable implements the Table interface and stores rows in-memory.

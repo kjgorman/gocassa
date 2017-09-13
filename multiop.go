@@ -2,8 +2,20 @@ package gocassa
 
 type multiOp []Op
 
-func Noop() Op {
+var noopFactory newNooper = defaultNoopFactory{}
+
+type newNooper interface {
+	NewNoop() Op
+}
+
+type defaultNoopFactory struct{}
+
+func (dnf defaultNoopFactory) NewNoop() Op {
 	return multiOp(nil)
+}
+
+func Noop() Op {
+	return noopFactory.NewNoop()
 }
 
 func (mo multiOp) Run() error {
