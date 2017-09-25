@@ -403,6 +403,11 @@ func (f *MockFilter) keysFromRelations(keyNames []string) ([]key, error) {
 		return []key{key{}}, nil
 	}
 
+	// No relations are provided
+	if len(keyRelationMap) == 0 {
+		return nil, nil
+	}
+
 	for i, keyName := range keyNames {
 		lastKey := i == len(keyNames)-1
 		relation, ok := keyRelationMap[keyName]
@@ -503,16 +508,31 @@ func (q *MockFilter) Read(out interface{}) Op {
 		q.table.Lock()
 		defer q.table.Unlock()
 
-		rowKeys, err := q.keysFromRelations(q.table.keys.PartitionKeys)
+		keys, err := q.keysFromRelations(q.table.keys.PartitionKeys)
 		if err != nil {
 			return err
+		}
+
+		var rowKeys = make([]rowKey, 0)
+
+		// If no keys are specified we should instead read all the rows!
+		// That is, a query like `select * from tablename` without a `where`
+		// defaults to selecting everything!
+		if keys == nil {
+			for k, _ := range q.table.rows {
+				rowKeys = append(rowKeys, k)
+			}
+		} else {
+			for _, k := range keys {
+				rowKeys = append(rowKeys, k.RowKey())
+			}
 		}
 
 		q.table.mtx.RLock()
 		defer q.table.mtx.RUnlock()
 		var result []map[string]interface{}
 		for _, rowKey := range rowKeys {
-			row := q.table.rows[rowKey.RowKey()]
+			row := q.table.rows[rowKey]
 			if row == nil {
 				continue
 			}

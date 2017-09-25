@@ -82,9 +82,12 @@ func (s *MockSuite) TestTableEmpty() {
 }
 
 func (s *MockSuite) TestTableRead() {
-	u1, u2, u3, u4 := s.insertUsers()
+	u1, u2, u3, u4, u5 := s.insertUsers()
 
 	var users []user
+	s.NoError(s.tbl.Where().Read(&users).Run())
+	s.containsAll([]user{u1, u2, u3, u4, u5}, users)
+
 	s.NoError(s.tbl.Where(Eq("Pk1", 1), Eq("Pk2", 1)).Read(&users).Run())
 	s.Equal([]user{u1, u4, u3}, users)
 
@@ -455,7 +458,7 @@ func (s *MockSuite) insertPoints() []point {
 	return points
 }
 
-func (s *MockSuite) insertUsers() (user, user, user, user) {
+func (s *MockSuite) insertUsers() (user, user, user, user, user) {
 	u1 := user{
 		Pk1:  1,
 		Pk2:  1,
@@ -498,7 +501,7 @@ func (s *MockSuite) insertUsers() (user, user, user, user) {
 		s.NoError(s.mmapTbl.Set(u).Run())
 	}
 
-	return u1, u2, u3, u4
+	return u1, u2, u3, u4, u5
 }
 
 func (s *MockSuite) insertAddresses() []address {
@@ -531,4 +534,10 @@ func (s *MockSuite) parseTime(value string) time.Time {
 	t, err := time.Parse("2006-01-02 15:04:05", value)
 	s.NoError(err)
 	return t
+}
+
+func (s *MockSuite) containsAll(expected []user, actual []user) {
+	for _, expect := range expected {
+		s.Contains(actual, expect)
+	}
 }
